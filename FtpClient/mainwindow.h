@@ -27,6 +27,11 @@ public slots:
     void slotError(QAbstractSocket::SocketError err);
 
 private:
+    void onChangeDir();
+    void onDownloadFile();
+    void onUploadFile();
+
+private:
      void init();
 
 private:
