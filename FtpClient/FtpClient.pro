@@ -19,3 +19,8 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h
 
 FORMS    += mainwindow.ui
+
+DISTFILES += \
+    data.txt
+
+CONFIG += c++11
