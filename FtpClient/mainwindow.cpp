@@ -7,6 +7,7 @@
 #include <QFile>
 
 #include <QMessageBox>
+#include <stdexcept>
 
 const int portNumber = 1488;
 
@@ -31,9 +32,9 @@ void MainWindow::doConnect()
         connect(socket, static_cast<void(QTcpSocket::*)
                 (QAbstractSocket::SocketError)>(&QAbstractSocket::error),
                 this, &MainWindow::slotError);
-        connect(ui->pushButton, &QPushButton::clicked, this, &MainWindow::onChangeDir);
-        connect(ui->pushButton_2, &QPushButton::clicked, this, &MainWindow::onDownloadFile);
-        connect(ui->pushButton_3, &QPushButton::clicked, this, &MainWindow::onUploadFile);
+        connect(ui->changeDirButton, &QPushButton::clicked, this, &MainWindow::onChangeDir);
+        connect(ui->downloadFileButton, &QPushButton::clicked, this, &MainWindow::onDownloadFile);
+        connect(ui->uploadFileButton, &QPushButton::clicked, this, &MainWindow::onUploadFile);
     }
 
     qDebug() << "connecting...";
@@ -62,39 +63,20 @@ void MainWindow::slotError(QAbstractSocket::SocketError err)
 
 void MainWindow::onChangeDir()
 {
-    std::string buffer;
-    buffer.resize(6);
-
-    buffer[0] = static_cast<char>(0);  // Operation code (1 byte)
-    buffer[1] = static_cast<char>(0);  // Error code (1 byte)
-    int *intPtr = reinterpret_cast<int *>(&buffer[2]); // Additional options (4 bytes)
-    intPtr[0]=0;
-     buffer += "C:\\FTPclient"; // Data (max: 1024 bytes)
-//    buffer += "C:\\ERROR_PATH"; // Data (max: 1024 bytes)
-
-    socket->write( buffer.c_str(), buffer.size() );
+    sendPath("C:\\FTPclient");
 
     socket->waitForReadyRead();
     QByteArray receivedData = socket->readAll();
 
-    short operationCode = static_cast<short>(receivedData[0]);
-    short errorCode = static_cast<short>(receivedData[1]);
-    intPtr = reinterpret_cast<int *>(receivedData.data()+2);
-    int additionalOptions = intPtr[0];
+    Packet pack(receivedData);
 
-    QString data(receivedData.data() + 6);
-
-    if(errorCode)
+    if(pack.getErrorCode())
     {
-        QMessageBox *errorMessage = new QMessageBox(this);
-        errorMessage->setWindowTitle("ERROR");
-        errorMessage->setText(data);
-        errorMessage->setGeometry(650,250,600,300);
-        errorMessage->show();
+        QMessageBox::information(this, "ERROR", pack.getData());
     }
     else
     {
-        qDebug () << data;
+        qDebug () << pack.getData();
     }
 }
 
@@ -131,6 +113,20 @@ void MainWindow::onUploadFile()
     data.append( readStream.readAll() );
 
     socket->write( data.data(), data.size() );
+}
+
+void MainWindow::sendPath(const QString &path)
+{
+    Packet pack(0, 0, 0, path);
+    if(pack.isValid())
+    {
+        std::string buffer = pack.toStdString();
+        socket->write( buffer.c_str(), buffer.size() );
+    }
+    else
+    {
+        throw std::invalid_argument("Error: The path is too long.");
+    }
 }
 
 void MainWindow::slotConnected()

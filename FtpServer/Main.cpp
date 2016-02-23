@@ -7,6 +7,7 @@
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
 #include <fstream>
+#include "Packet.h"
 
 using boost::asio::ip::tcp;
 using namespace boost::filesystem;
@@ -17,69 +18,54 @@ struct Executor
 {
 	static void ChangeDir(tcp::socket &sock)
 	{
+		std::cout << "Dispathed change dir" << std::endl;
+
 		boost::system::error_code error;
 		std::vector<char> data(max_length);
 
 		size_t length = sock.read_some(boost::asio::buffer(data), error);
 		data[length] = '\0';
 		
-		short errorCode = static_cast<short>(data[0]);
+		Packet pack(0, data);
 
-		int *intPtr = reinterpret_cast<int *>(&data[1]);
-		int additionalOptions = intPtr[0];
+		std::cout << "\nError code " << pack.getErrorCode() << "\nAdditional Options " << pack.getAdditionalOptions() << std::endl;
 
-		std::cout << "Dispathed change dir" << std::endl;
-		std::cout << "\nError code " << errorCode << "\nAdditional Options " << additionalOptions << std::endl;
-
-		std::string dataToSend;
-		dataToSend.resize(6);
-
-		if (errorCode) // If there's an error
+		if (pack.getErrorCode())
 		{
-			std::string errorMessage(data.begin() + 5, data.begin() + length);
-			std::clog << errorMessage;
+			std::cout << "Error: Server could not work properly.\n";
+			std::clog << pack.getData() << std::endl;
 
-			dataToSend[0] = static_cast<char>(1); // Operation code (1 byte)
-			dataToSend[1] = static_cast<char>(1); // Error code (1 byte)
-			*reinterpret_cast<int *>(&dataToSend[2]) = 0; // Additional options (4 bytes)
-			dataToSend += "An error occured\n"; // Data (1024 bytes)
-
-			std::cout << "An error occured\n";
+			Packet toSend(1, 1, 0, "Error: Server could not work properly.\n");
+			sock.write_some(boost::asio::buffer(toSend.toString()), error);
 		}
 		else
 		{
-			std::string strPath(data.begin() + 5, data.begin() + length);
-			path dirPath(strPath);
+			path dirPath(pack.getData());
 
 			if (exists(dirPath) && is_directory(dirPath))
 			{
 				std::cout << "\nIt's a directory that contains:\n";
 
-				dataToSend[0] = static_cast<char>(0); // Operation code (1 byte)
-				dataToSend[1] = static_cast<char>(0); // Error code (1 byte)
-				*reinterpret_cast<int *>(&dataToSend[2]) = 0; // Additional options (4 bytes)
-
-				dataToSend += "It's a directory that contains:\n"; // Data (1024 bytes)
+				std::string dirContent;
+				dirContent += "It's a directory that contains:\n"; 
 				for (directory_entry& file : directory_iterator(dirPath))
 				{
-					dataToSend += file.path().string();
-					dataToSend += "\n";
+					dirContent += file.path().string();
+					dirContent += "\n";
 
 					path filePath = file.path();
 					std::cout << "    " << filePath.native() << '\n';
 				}
+				Packet toSend(0, 0, 0, dirContent);
+				sock.write_some(boost::asio::buffer(toSend.toString()), error);
 			}
 			else
 			{
-				dataToSend[0] = static_cast<char>(1); // Operation code (1 byte)
-				dataToSend[1] = static_cast<char>(1); // Error code (1 byte)
-				*reinterpret_cast<int *>(&dataToSend[2]) = 0; // Additional options (4 bytes)
-				dataToSend += "Error path\n"; // Data (1024 bytes)
+				Packet toSend(1, 1, 0, "Error path\n");
+				sock.write_some(boost::asio::buffer(toSend.toString()), error);
 
 				std::cout << "Error path \n";
-			}
-
-			sock.write_some(boost::asio::buffer(dataToSend), error);
+			}			
 		}
 	}
 
