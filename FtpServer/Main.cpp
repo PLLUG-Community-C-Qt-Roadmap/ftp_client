@@ -5,11 +5,12 @@
 #include <thread>
 #include <utility>
 #include <boost/asio.hpp>
+#include <boost/filesystem.hpp>
 #include <fstream>
 
 using boost::asio::ip::tcp;
 
-const int max_length = 1024;
+const int max_length = 1030;
 
 struct Executor
 {
@@ -38,15 +39,38 @@ struct Executor
 	static void UploadFile(tcp::socket &sock)
 	{
 		boost::system::error_code error;
-		std::vector<char> data(6000);
-		size_t length = sock.read_some(boost::asio::buffer(data), error);
+		std::vector<char> directory(max_length);
 
-		std::cout << "Dispathed upload file" << std::endl;
+		size_t length = sock.read_some(boost::asio::buffer(directory), error);
 
-		std::ofstream file("myImg.png", std::ios::binary);
+		std::string path(&directory[4]);
+		boost::filesystem::path filePath(path);
+		if (exists(filePath))
+		{
+			std::cout << "Dispatched directory path: " << filePath << std::endl;
+		}
+		else
+		{
+			std::cout << "Wrong directory! Change directory please." << std::endl;
+			return;
+		}
 
-		file.write(&data[0], length);
-	}
+		int fileSize = file_size(filePath);
+
+		std::vector<char> data(fileSize);
+		size_t length1 = sock.read_some(boost::asio::buffer(data), error);
+		
+		std::cout << "Dispathed upload file: Uploading..." << std::endl;
+
+		std::ofstream file("UploadFile", std::ios::binary);
+
+		if (file.write(&data[0], length1))
+		{
+			std::cout << "Upload successfull!" << std::endl;
+		}
+		else std::cout << "Upload error! " << std::endl;
+		
+	}	
 };
 
 struct Dispather
@@ -113,6 +137,8 @@ void server(boost::asio::io_service& io_service, unsigned short port)
 		tcp::socket sock(io_service);
 		a.accept(sock);
 		std::thread(session, std::move(sock)).detach();
+
+		std::cout << "Session started on port: " << port << std::endl << std::endl;
 	}
 }
 

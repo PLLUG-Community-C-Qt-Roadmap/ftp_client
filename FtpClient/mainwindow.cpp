@@ -7,6 +7,7 @@
 #include <QFile>
 
 const int portNumber = 1488;
+const int packageSize = 1030;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -34,10 +35,10 @@ void MainWindow::doConnect()
         connect(ui->pushButton_3, &QPushButton::clicked, this, &MainWindow::onUploadFile);
     }
 
+
     qDebug() << "connecting...";
 
     socket->connectToHost("localhost", portNumber);
-    socket->write("Hello");
 }
 
 void MainWindow::slotError(QAbstractSocket::SocketError err)
@@ -86,14 +87,25 @@ void MainWindow::onDownloadFile()
 
 void MainWindow::onUploadFile()
 {
-
-    QFile readStream("data.png");
+    QFile readStream("Your_Dir");
+    std::string directoryToSend("Your_Dir");
 
     if( !readStream.open( QIODevice::ReadOnly ) )
     {
         qDebug() << "Can`t open file";
         return;
     }
+
+    std::vector<char> buffer(packageSize);
+
+    buffer[0] = 2;
+    buffer[1] = 0;
+
+    *reinterpret_cast<long*>(&buffer[2]) = readStream.size();
+
+    char *dataPtr = &buffer[6]; // 1024
+
+    strcpy(dataPtr, directoryToSend.c_str());
 
     qDebug() << readStream.size();
 
@@ -103,7 +115,9 @@ void MainWindow::onUploadFile()
 
     data.append( readStream.readAll() );
 
-    socket->write( data.data(), data.size() );
+    socket->write( &buffer[0], buffer.size()); // send directory
+
+    socket->write( data.data(), data.size()); // send file
 }
 
 void MainWindow::slotConnected()

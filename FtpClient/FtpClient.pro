@@ -21,4 +21,6 @@ HEADERS  += mainwindow.h
 FORMS    += mainwindow.ui
 
 DISTFILES += \
-    data.txt
+    data.txt \
+    ../../../../pic.ico \
+    ../../../../../Desktop/dUCX6JKN9RY.jpg
