@@ -2,57 +2,49 @@
 
 
 Packet::Packet() :
-	operationCode(),
-	errorCode(),
-	additionalOptions(),
-	data()
+	mOperationCode(),
+	mErrorCode(),
+	mAdditionalOptions(),
+	mData()
 {
 }
 
 Packet::Packet(const std::vector<char> &packet)
 {
-	if (packet.size() >= 7 && packet.size() <= 1030)
+	parse(&packet[0], packet.size());
+	if (!isValid())
 	{
-		operationCode = static_cast<const short>(packet[0]);
-		errorCode = static_cast<const short>(packet[1]);
-		int *intPtr = const_cast<int *>(reinterpret_cast<const int *>(packet.data() + 2));
-		additionalOptions = intPtr[0];
-		data = std::string(packet.data() + 6);
+		throw std::invalid_argument("Unable to create a packet out of these data.");
 	}
 }
 
-Packet::Packet(const short & oc, const std::vector<char>& packet):
-	operationCode(oc)
+Packet::Packet(const short oc, const std::vector<char> &packet)
 {
-	if (packet.size() >= 7 && packet.size() <= 1030)
+	parse(oc, &packet[0], packet.size());
+	if (!isValid())
 	{
-		errorCode = static_cast<const short>(packet[0]);
-		int *intPtr = const_cast<int *>(reinterpret_cast<const int *>(packet.data() + 1));
-		additionalOptions = intPtr[0];
-		data = std::string(packet.data() + 5);
+		throw std::invalid_argument("Unable to create a packet out of these data.");
 	}
 }
 
-Packet::Packet(const short &oc, const short &ec, const int &ad, const std::string &dt) :
-	operationCode(oc),
-	errorCode(ec),
-	additionalOptions(ad),
-	data(dt)
+Packet::Packet(const short oc, const short ec, const int ad, const std::string &dt) :
+	mOperationCode(oc),
+	mErrorCode(ec),
+	mAdditionalOptions(ad),
+	mData(dt)
 {
+	if (!isValid())
+	{
+		throw std::invalid_argument("Unable to create a packet out of these data.");
+	}
 }
 
 Packet::Packet(const Packet &pack) :
-	operationCode(pack.operationCode),
-	errorCode(pack.errorCode),
-	additionalOptions(pack.additionalOptions),
-	data(pack.data)
+	mOperationCode(pack.mOperationCode),
+	mErrorCode(pack.mErrorCode),
+	mAdditionalOptions(pack.mAdditionalOptions),
+	mData(pack.mData)
 {
-}
-
-bool Packet::isValid() const
-{
-	return (operationCode >= 0 && operationCode <= 2) &&
-		(errorCode >= 0 && errorCode <= 3);
 }
 
 std::string Packet::toString() const
@@ -60,31 +52,69 @@ std::string Packet::toString() const
 	std::string str;
 	str.resize(6);
 
-	str[0] = static_cast<char>(operationCode);
-	str[1] = static_cast<char>(errorCode);
+	str[0] = static_cast<char>(mOperationCode);
+	str[1] = static_cast<char>(mErrorCode);
 	int *intPtr = reinterpret_cast<int *>(&str[2]);
-	intPtr[0] = additionalOptions;
-	str += data;
+	intPtr[0] = mAdditionalOptions;
+	str += mData;
 
 	return str;
 }
 
 short Packet::getOperationCode() const
 {
-	return operationCode;
+	return mOperationCode;
 }
 
 short Packet::getErrorCode() const
 {
-	return errorCode;
+	return mErrorCode;
 }
 
 int Packet::getAdditionalOptions() const
 {
-	return additionalOptions;
+	return mAdditionalOptions;
 }
 
 std::string Packet::getData() const
 {
-	return data;
+	return mData;
+}
+
+bool Packet::isValid() const
+{
+	return (mOperationCode >= 0 && mOperationCode <= 2) &&
+		(mErrorCode >= 0 && mErrorCode <= 3);
+}
+
+void Packet::parse(const char *data, const size_t length)
+{
+	if (length >= 7 && length <= 1030)
+	{
+		mOperationCode = static_cast<short>(data[0]);
+		mErrorCode = static_cast<short>(data[1]);
+		int *intPtr = const_cast<int *>(reinterpret_cast<const int *>(&data[2]));
+		mAdditionalOptions = intPtr[0]; 
+		mData = std::string(data + 6);
+	}
+	else
+	{
+		throw std::invalid_argument("Unable to create a packet out of these data.");
+	}
+}
+
+void Packet::parse(const short oc, const char *data, const size_t length)
+{
+	mOperationCode = oc;
+	if (length >= 6 && length <= 1029)
+	{
+		mErrorCode = static_cast<short>(data[0]);
+		int *intPtr = const_cast<int *>(reinterpret_cast<const int *>(&data[1]));
+		mAdditionalOptions = intPtr[0];
+		mData = std::string(data + 5);
+	}
+	else
+	{
+		throw std::invalid_argument("Unable to create a packet out of these data.");
+	}
 }

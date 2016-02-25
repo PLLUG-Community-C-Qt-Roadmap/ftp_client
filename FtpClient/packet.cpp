@@ -1,68 +1,65 @@
 #include "packet.h"
 
 Packet::Packet():
-    operationCode(),
-    errorCode(),
-    additionalOptions(),
-    data()
+    mOperationCode(),
+    mErrorCode(),
+    mAdditionalOptions(),
+    mData()
 {
 }
 
 Packet::Packet(const std::string &packet)
 {
-    if(packet.length() >= 7 && packet.length() <= 1030)
-    {
-        operationCode = static_cast<const short>(packet[0]);
-        errorCode = static_cast<const short>(packet[1]);
-        int *intPtr = const_cast<int *>(reinterpret_cast<const int *>(packet.data()+2));
-        additionalOptions = intPtr[0];
-        data = QString(packet.data() + 6);
-    }
+   parse(&packet[0], packet.length());
+   if(!isValid())
+   {
+       throw std::invalid_argument("Error: Unable to create a packet out of these data.");
+   }
 }
 
 Packet::Packet(const QByteArray &packet)
 {
-    if(packet.length() >= 7 && packet.length() <= 1030)
+    parse(packet.data(),packet.length());
+    if(!isValid())
     {
-        operationCode = static_cast<short>(packet[0]);
-        errorCode = static_cast<short>(packet[1]);
-        int *intPtr = const_cast<int *>(reinterpret_cast<const int *>(packet.data()+2));
-        additionalOptions = intPtr[0];
-        data = QString(packet.data() + 6);
+        throw std::invalid_argument("Error: Unable to create a packet out of these data.");
     }
 }
 
-Packet::Packet(const short &oc, const short &ec, const int &ad, const QString &dt):
-    operationCode(oc),
-    errorCode(ec),
-    additionalOptions(ad),
-    data(dt)
+Packet::Packet(const short oc, const short ec, const int ad, const QString &dt):
+    mOperationCode(oc),
+    mErrorCode(ec),
+    mAdditionalOptions(ad),
+    mData(dt)
 {
+    if(!isValid())
+    {
+        throw std::invalid_argument("Error: Unable to create a packet out of these data.");
+    }
 }
 
-Packet::Packet(const short &oc, const short &ec, const int &ad, const std::string &dt):
-    operationCode(oc),
-    errorCode(ec),
-    additionalOptions(ad),
-    data(QString::fromStdString(dt))
+Packet::Packet(const short oc, const short ec, const int ad, const std::string &dt):
+    mOperationCode(oc),
+    mErrorCode(ec),
+    mAdditionalOptions(ad),
+    mData(QString::fromStdString(dt))
 {
+    if(!isValid())
+    {
+        throw std::invalid_argument("Error: Unable to create a packet out of these data.");
+    }
 }
 
 Packet::Packet(const Packet &pack):
-    operationCode(pack.operationCode),
-    errorCode(pack.errorCode),
-    additionalOptions(pack.additionalOptions),
-    data(pack.data)
+    mOperationCode(pack.mOperationCode),
+    mErrorCode(pack.mErrorCode),
+    mAdditionalOptions(pack.mAdditionalOptions),
+    mData(pack.mData)
 {
-}
-
-bool Packet::isValid() const
-{
-    return (operationCode >= 0 && operationCode <= 2) &&
-           (errorCode >= 0 && errorCode <= 3);
 }
 
 QString Packet::toQString() const
+
 {
     return QString::fromStdString(toStdString());
 }
@@ -72,31 +69,53 @@ std::string Packet::toStdString() const
     std::string str;
     str.resize(6);
 
-    str[0] = static_cast<char>(operationCode);
-    str[1] = static_cast<char>(errorCode);
+    str[0] = static_cast<char>(mOperationCode);
+    str[1] = static_cast<char>(mErrorCode);
     int *intPtr = reinterpret_cast<int *>(&str[2]);
-    intPtr[0]=additionalOptions;
-    str += data.toStdString();
+    intPtr[0] = mAdditionalOptions;
+    str += mData.toStdString();
 
     return str;
 }
 
 short Packet::getOperationCode() const
 {
-    return operationCode;
+    return mOperationCode;
 }
 
 short Packet::getErrorCode() const
 {
-    return errorCode;
+    return mErrorCode;
 }
 
 int Packet::getAdditionalOptions() const
 {
-    return additionalOptions;
+    return mAdditionalOptions;
 }
 
 QString Packet::getData() const
 {
-    return data;
+    return mData;
+}
+
+bool Packet::isValid() const
+{
+    return (mOperationCode >= 0 && mOperationCode <= 2) &&
+            (mErrorCode >= 0 && mErrorCode <= 3);
+}
+
+void Packet::parse(const char *data, const size_t length)
+{
+    if(length >= 7 && length <= 1030)
+    {
+        mOperationCode = static_cast<short>(data[0]);
+        mErrorCode = static_cast<short>(data[1]);
+        int *intPtr = const_cast<int *>(reinterpret_cast<const int *>(&data[2]));
+        mAdditionalOptions = intPtr[0]; // system stops working
+        mData = QString(data+6);
+    }
+    else
+    {
+        throw std::invalid_argument("Error: Unable to create a packet out of these data.");
+    }
 }

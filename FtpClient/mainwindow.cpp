@@ -63,20 +63,26 @@ void MainWindow::slotError(QAbstractSocket::SocketError err)
 
 void MainWindow::onChangeDir()
 {
-    sendPath("C:\\FTPclient");
-
-    socket->waitForReadyRead();
-    QByteArray receivedData = socket->readAll();
-
-    Packet pack(receivedData);
-
-    if(pack.getErrorCode())
+    try
     {
-        QMessageBox::information(this, "ERROR", pack.getData());
+        sendPath("C:\\FTPclient");
+
+        socket->waitForReadyRead();
+        QByteArray receivedData = socket->readAll();
+        Packet pack(receivedData);
+
+        if(pack.getErrorCode())
+        {
+            throw std::runtime_error(pack.getData().toStdString());
+        }
+        else
+        {
+            qDebug () << pack.getData();
+        }
     }
-    else
+    catch(const std::exception &e)
     {
-        qDebug () << pack.getData();
+        QMessageBox::information(this, "ERROR", e.what());
     }
 }
 
@@ -118,15 +124,8 @@ void MainWindow::onUploadFile()
 void MainWindow::sendPath(const QString &path)
 {
     Packet pack(0, 0, 0, path);
-    if(pack.isValid())
-    {
-        std::string buffer = pack.toStdString();
-        socket->write( buffer.c_str(), buffer.size() );
-    }
-    else
-    {
-        throw std::invalid_argument("Error: The path is too long.");
-    }
+    std::string buffer = pack.toStdString();
+    socket->write( buffer.c_str(), buffer.size() );
 }
 
 void MainWindow::slotConnected()

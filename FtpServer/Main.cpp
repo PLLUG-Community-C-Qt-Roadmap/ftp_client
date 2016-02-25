@@ -12,7 +12,7 @@
 using boost::asio::ip::tcp;
 using namespace boost::filesystem;
 
-const int max_length = 1024;
+const int max_length = 1030;
 
 struct Executor
 {
@@ -21,22 +21,19 @@ struct Executor
 		std::cout << "Dispathed change dir" << std::endl;
 
 		boost::system::error_code error;
-		std::vector<char> data(max_length);
+		std::vector<char> data(max_length - 1);
 
 		size_t length = sock.read_some(boost::asio::buffer(data), error);
 		data[length] = '\0';
 		
 		Packet pack(0, data);
 
-		std::cout << "\nError code " << pack.getErrorCode() << "\nAdditional Options " << pack.getAdditionalOptions() << std::endl;
-
 		if (pack.getErrorCode())
 		{
-			std::cout << "Error: Server could not work properly.\n";
-			std::clog << pack.getData() << std::endl;
-
 			Packet toSend(1, 1, 0, "Error: Server could not work properly.\n");
 			sock.write_some(boost::asio::buffer(toSend.toString()), error);
+
+			throw std::runtime_error("Client error (" + pack.getData() + ")");
 		}
 		else
 		{
@@ -61,10 +58,10 @@ struct Executor
 			}
 			else
 			{
-				Packet toSend(1, 1, 0, "Error path\n");
+				Packet toSend(1, 1, 0, "Error: Non-existing path\n");
 				sock.write_some(boost::asio::buffer(toSend.toString()), error);
-
-				std::cout << "Error path \n";
+				
+				throw std::runtime_error("Non-existing path.");
 			}			
 		}
 	}
@@ -140,7 +137,6 @@ void session(tcp::socket sock)
 				throw boost::system::system_error(error); // Some other error.
 
 			
-			//short op = *reinterpret_cast<short*>(&data[0]);
 			short op = static_cast<short>(data[0]);
 			dispatcher->Dispatch(op);
 		}

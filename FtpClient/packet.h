@@ -4,6 +4,7 @@
 #include<QString>
 #include<QByteArray>
 #include<string>
+#include<stdexcept>
 
 class Packet
 {
@@ -11,12 +12,10 @@ public:
     Packet();
     Packet(const std::string &packet);
     Packet(const QByteArray &packet);
-    Packet(const short &oc, const short &ec, const int &ad, const QString &dt);
-    Packet(const short &oc, const short &ec, const int &ad, const std::string &dt);
+    Packet(const short oc, const short ec, const int ad, const QString &dt);
+    Packet(const short oc, const short ec, const int ad, const std::string &dt);
 
     Packet(const Packet& pack);
-
-    bool isValid() const;
 
     QString toQString() const;
     std::string toStdString() const;
@@ -27,10 +26,14 @@ public:
     QString getData() const;
 
 private:
-    short operationCode;
-    short errorCode;
-    int additionalOptions;
-    QString data;
+    bool isValid() const;
+    void parse(const char *data, const size_t length);
+
+private:
+    short mOperationCode;
+    short mErrorCode;
+    int mAdditionalOptions;
+    QString mData;
 };
 
 #endif // PACKET_H
