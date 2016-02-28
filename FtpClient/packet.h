@@ -1,10 +1,10 @@
 #ifndef PACKET_H
 #define PACKET_H
 
-#include<QString>
-#include<QByteArray>
-#include<string>
-#include<stdexcept>
+#include <QString>
+#include <QByteArray>
+#include <string>
+#include <stdexcept>
 
 class Packet
 {

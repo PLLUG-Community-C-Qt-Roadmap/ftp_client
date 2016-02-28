@@ -8,6 +8,8 @@
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include "Packet.h"
+#include <map>
+#include <memory>
 
 using boost::asio::ip::tcp;
 using namespace boost::filesystem;
@@ -120,72 +122,6 @@ std::map<Dispather::MessageT, Dispather::Action> Dispather::_operations {
 	{ MessageT::UploadFile, Executor::UploadFile }
 };
 
-struct Executor
-{
-	static void ChangeDir(tcp::socket &sock)
-	{
-		boost::system::error_code error;
-		std::vector<char> data(max_length);
-		size_t length = sock.read_some(boost::asio::buffer(data), error);
-		data[length] = '\0';
-
-		std::cout << "Dispathed change dir" << std::endl;
-		std::cout << &data[0] << std::endl;
-	}
-
-	static void DownloadFile(tcp::socket &sock)
-	{
-		boost::system::error_code error;
-		std::vector<char> data(max_length);
-		size_t length = sock.read_some(boost::asio::buffer(data), error);
-		data[length] = '\0';
-
-		std::cout << "Dispathed download file" << std::endl;
-		std::cout << &data[0] << std::endl;
-	}
-
-	static void UploadFile(tcp::socket &sock)
-	{
-		boost::system::error_code error;
-		std::vector<char> data(6000);
-		size_t length = sock.read_some(boost::asio::buffer(data), error);
-
-		std::cout << "Dispathed upload file" << std::endl;
-
-		std::ofstream file("myImg.png", std::ios::binary);
-
-		file.write(&data[0], length);
-	}
-};
-
-struct Dispather
-{
-	Dispather(tcp::socket &socket) : _socket(socket)
-	{
-	}
-	void Dispatch(short op)
-	{
-		if (op < 0 || op > 2)
-		{
-			std::cout << "Unknown operation" << std::endl;
-			return;
-		}
-
-		_operations[static_cast<MessageT>(op)](_socket);
-	}
-
-	enum class MessageT { DownloadFile = 0, ChangeDir, UploadFile };
-	typedef std::function<void(tcp::socket&)> Action;
-	static std::map < MessageT, Action > _operations;
-
-	tcp::socket &_socket;
-};
-
-std::map<Dispather::MessageT, Dispather::Action> Dispather::_operations { 
-	{ MessageT::ChangeDir, Executor::ChangeDir },
-	{ MessageT::DownloadFile, Executor::DownloadFile },
-	{ MessageT::UploadFile, Executor::UploadFile }
-};
 
 void session(tcp::socket sock)
 {

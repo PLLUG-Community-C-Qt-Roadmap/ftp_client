@@ -13,9 +13,9 @@ TARGET = FtpClient
 TEMPLATE = app
 
 
-SOURCES += main.cpp\
-        mainwindow.cpp \
-    packet.cpp
+SOURCES += main.cpp \
+        packet.cpp \
+        mainwindow.cpp
 
 HEADERS  += mainwindow.h \
     packet.h
