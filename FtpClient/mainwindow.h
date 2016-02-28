@@ -7,6 +7,8 @@
 #include <QAbstractSocket>
 #include <QDebug>
 
+#include "packet.h"
+
 namespace Ui {
 class MainWindow;
 }
@@ -30,6 +32,7 @@ private:
     void onChangeDir();
     void onDownloadFile();
     void onUploadFile();
+    void sendPath(const QString& path);
 
 private:
      void init();

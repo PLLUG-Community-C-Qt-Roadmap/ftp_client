@@ -55,7 +55,7 @@ QPushButton:active
      </widget>
     </item>
     <item row="1" column="0">
-     <widget class="QPushButton" name="pushButton">
+     <widget class="QPushButton" name="changeDirButton">
       <property name="text">
        <string>ChangeDir</string>
       </property>
@@ -65,14 +65,14 @@ QPushButton:active
      </widget>
     </item>
     <item row="2" column="0">
-     <widget class="QPushButton" name="pushButton_2">
+     <widget class="QPushButton" name="downloadFileButton">
       <property name="text">
        <string>DownloadFile</string>
       </property>
      </widget>
     </item>
     <item row="3" column="0">
-     <widget class="QPushButton" name="pushButton_3">
+     <widget class="QPushButton" name="uploadFileButton">
       <property name="text">
        <string>UploadFile</string>
       </property>
