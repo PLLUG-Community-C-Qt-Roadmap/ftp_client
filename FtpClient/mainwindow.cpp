@@ -6,6 +6,9 @@
 #include <fstream>
 #include <QFile>
 
+#include <QMessageBox>
+#include <stdexcept>
+
 const int portNumber = 1488;
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -29,9 +32,10 @@ void MainWindow::doConnect()
         connect(socket, static_cast<void(QTcpSocket::*)
                 (QAbstractSocket::SocketError)>(&QAbstractSocket::error),
                 this, &MainWindow::slotError);
-        connect(ui->pushButton, &QPushButton::clicked, this, &MainWindow::onChangeDir);
-        connect(ui->pushButton_2, &QPushButton::clicked, this, &MainWindow::onDownloadFile);
-        connect(ui->pushButton_3, &QPushButton::clicked, this, &MainWindow::onUploadFile);
+
+        connect(ui->changeDirButton, &QPushButton::clicked, this, &MainWindow::onChangeDir);
+        connect(ui->downloadFileButton, &QPushButton::clicked, this, &MainWindow::onDownloadFile);
+        connect(ui->uploadFileButton, &QPushButton::clicked, this, &MainWindow::onUploadFile);
     }
 
     qDebug() << "connecting...";
@@ -60,15 +64,27 @@ void MainWindow::slotError(QAbstractSocket::SocketError err)
 
 void MainWindow::onChangeDir()
 {
-    std::string buffer;
+    try
+    {
+        sendPath("C:\\FTPclient");
 
-    buffer.resize(2);
+        socket->waitForReadyRead();
+        QByteArray receivedData = socket->readAll();
+        Packet pack(receivedData);
 
-    *reinterpret_cast<short*>(&buffer[0]) = 0;
-
-    buffer += "Change dir plz";
-
-    socket->write( buffer.c_str(), buffer.size() );
+        if(pack.getErrorCode())
+        {
+            throw std::runtime_error(pack.getData().toStdString());
+        }
+        else
+        {
+            qDebug () << pack.getData();
+        }
+    }
+    catch(const std::exception &e)
+    {
+        QMessageBox::information(this, "ERROR", e.what());
+    }
 }
 
 void MainWindow::onDownloadFile()
@@ -104,6 +120,13 @@ void MainWindow::onUploadFile()
     data.append( readStream.readAll() );
 
     socket->write( data.data(), data.size() );
+}
+
+void MainWindow::sendPath(const QString &path)
+{
+    Packet pack(0, 0, 0, path);
+    std::string buffer = pack.toStdString();
+    socket->write( buffer.c_str(), buffer.size() );
 }
 
 void MainWindow::slotConnected()

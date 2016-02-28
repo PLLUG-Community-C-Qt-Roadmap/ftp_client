@@ -14,11 +14,15 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+    packet.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    packet.h
 
 FORMS    += mainwindow.ui
 
 DISTFILES += \
     data.txt
+
+CONFIG += c++11
