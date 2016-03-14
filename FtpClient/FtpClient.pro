@@ -4,21 +4,21 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
-QT += network
+QT += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = FtpClient
 TEMPLATE = app
 
-
 SOURCES += main.cpp \
         packet.cpp \
-        mainwindow.cpp
+        mainwindow.cpp \
+        listmodel.cpp
 
 HEADERS  += mainwindow.h \
-    packet.h
+    packet.h \
+    listmodel.h
 
 FORMS    += mainwindow.ui
 
