@@ -15,10 +15,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    packet.cpp
+    packet.cpp \
+    listmodel.cpp
 
 HEADERS  += mainwindow.h \
-    packet.h
+    packet.h \
+    listmodel.h
 
 FORMS    += mainwindow.ui
 
