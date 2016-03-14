@@ -11,9 +11,9 @@ struct ModelEntity
 {
     enum Type
     {
-        folder = 0,
-        file = 1,
-        undefined = 2
+        Undefined = 0,
+        Folder = 1,
+        File = 2,
     };
 
     ModelEntity ():
@@ -28,12 +28,6 @@ struct ModelEntity
         mType(type),
         mSize(size)
     {}
-    ModelEntity (const ModelEntity  &copy):
-        mName(copy.mName),
-        mDateModified(copy.mDateModified),
-        mType(copy.mType),
-        mSize(copy.mSize)
-    {}
 
     QString mName;
     QDateTime mDateModified;
@@ -41,7 +35,13 @@ struct ModelEntity
     double mSize;
 };
 
-class ListModel : public QAbstractListModel
+class IListModel
+{
+public:
+    virtual void refreshData(const std::vector<ModelEntity> &ent) = 0;
+};
+
+class ListModel : public QAbstractListModel, public IListModel
 {
     Q_OBJECT
 public:
@@ -50,8 +50,16 @@ public:
     virtual int rowCount(const QModelIndex &parent) const override;
     virtual int columnCount(const QModelIndex &parent) const override;
     virtual QVariant data(const QModelIndex &index, int role) const override;
-    virtual bool setData(const QModelIndex &index, const QVariant &value, int role) override;
-    virtual bool insertRows(int row, int count, const QModelIndex &parent) override;
+
+    virtual void refreshData(const std::vector<ModelEntity> &newData) override;
+
+    enum Column
+    {
+        Name = 0,
+        DateModified = 1,
+        Type = 2,
+        Size = 3
+    };
 
 private:
     std::vector<ModelEntity> mData;
