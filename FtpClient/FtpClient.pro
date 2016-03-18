@@ -16,11 +16,15 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     packet.cpp \
-    listmodel.cpp
+    listmodel.cpp \
+    clientcontext.cpp \
+    listviewcontroller.cpp
 
 HEADERS  += mainwindow.h \
     packet.h \
-    listmodel.h
+    listmodel.h \
+    clientcontext.h \
+    listviewcontroller.h
 
 FORMS    += mainwindow.ui
 

@@ -6,6 +6,7 @@
 #include <utility>
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 #include <fstream>
 #include "Packet.h"
 
@@ -13,6 +14,37 @@ using boost::asio::ip::tcp;
 using namespace boost::filesystem;
 
 const int max_length = 1030;
+
+std::string getDateModified(const boost::filesystem::directory_entry &p)
+{
+	std::time_t date = last_write_time(p.path());
+
+	return asctime(gmtime(&date));
+}
+
+std::string getFileInfo(const boost::filesystem::directory_entry &p)
+{
+	std::string fileInfo;
+
+	fileInfo += p.path().filename().string(); //name
+	fileInfo += "\n";
+
+	fileInfo += getDateModified(p); // date modified
+
+	if (is_directory(p))
+	{
+		fileInfo += "Folder\n"; //type
+		fileInfo += "\n"; //size should not be stated, so we leave the empty space
+	}
+	else
+	{
+		fileInfo += "File\n"; //type
+		fileInfo += boost::lexical_cast<std::string>(file_size(p.path())); //size
+		fileInfo += '\n';
+	}
+
+	return fileInfo;
+}
 
 struct Executor
 {
@@ -44,11 +76,9 @@ struct Executor
 				std::cout << "\nIt's a directory that contains:\n";
 
 				std::string dirContent;
-				dirContent += "It's a directory that contains:\n"; 
 				for (directory_entry& file : directory_iterator(dirPath))
 				{
-					dirContent += file.path().string();
-					dirContent += "\n";
+					dirContent += getFileInfo(file);
 
 					path filePath = file.path();
 					std::cout << "    " << filePath.native() << '\n';
