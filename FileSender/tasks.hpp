@@ -22,6 +22,7 @@ public slots:
         connect(&client, SIGNAL(error(QAbstractSocket::SocketError)), this,
                 SLOT(handleError(QAbstractSocket::SocketError)));
         connect(&client, &QTcpSocket::disconnected, this, &ClientTask::finished);
+        client.setSocketOption(QAbstractSocket::LowDelayOption, 1); // don't need this, but can be usefull
         client.connectToHost("localhost", 1488);
     }
 
@@ -43,12 +44,10 @@ private:
         readStream.seekg(0, readStream.beg);
 
         char *ptr = reinterpret_cast<char*>(&size);
-        qDebug() << "File sent" << client.write(ptr, 4);
+        qDebug() << "File sent" << client.write(ptr, 4); // send size
         client.waitForBytesWritten(300);
 
-
-
-        std::vector<char> data(size);
+        std::vector<char> data(size); // buffer for file, not really neaded, can be readed directly from stream
 
         readStream.read(&data[0], size);
 
@@ -56,13 +55,12 @@ private:
 
         while( written < size )
         {
+            // write data to stream
             size_t temp = client.write(&data[written], std::min(numberOfBytes, data.size() - written));
 
             qDebug() << temp;
             written += temp;
         }
-
-        qDebug() << client.flush();
     }
 
 private:
@@ -100,25 +98,26 @@ public slots:
         if(sizeResult != 4)
             throw std::runtime_error("funcking wrong");
 
-        socket->waitForReadyRead(300);
+        data.resize(size);
 
-        std::vector<char> data(size);
+        // when the data is ready perform operation
+        connect(socket, &QTcpSocket::readyRead, this, [=] {
 
-        std::ofstream writeStream("output.jpg", std::ios::binary);
+            static size_t read = 0;
+            qDebug() << socket->bytesAvailable();
+            // read as much data as there is available
+            size_t temp = socket->read(&data[read], data.size());
+            read += temp;
 
-        size_t read = 0;
-
-        while(read < size)
-        {
-            if(socket->bytesAvailable())
+            // if all data is available, write it to file.
+            if(read >= size)
             {
-                size_t temp = socket->read(&data[read], numberOfBytes);
-                read += temp;
+                qDebug() << "File received";
+                std::ofstream writeStream("output.jpg", std::ios::binary);
+                writeStream.write(&data[0], data.size());
+                emit finished();
             }
-        }
-
-        writeStream.write(&data[0], data.size());
-        qDebug() << "File received";
+        });
     }
 
 signals:
@@ -126,6 +125,7 @@ signals:
 
 private:
     QTcpServer serverSocket;
+    std::vector<char> data;
 };
 
 #endif // TASKS_HPP

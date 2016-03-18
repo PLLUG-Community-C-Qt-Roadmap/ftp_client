@@ -18,3 +18,6 @@ SOURCES += main.cpp
 
 HEADERS += \
     tasks.hpp
+
+DISTFILES += \
+    test.txt
