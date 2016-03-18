@@ -21,7 +21,7 @@ public slots:
         connect(&client, &QTcpSocket::connected, this, &ClientTask::sendFile);
         connect(&client, SIGNAL(error(QAbstractSocket::SocketError)), this,
                 SLOT(handleError(QAbstractSocket::SocketError)));
-        //connect(&client, &QTcpSocket::disconnected, this, &ClientTask::finished);
+        connect(&client, &QTcpSocket::disconnected, this, &ClientTask::finished);
         client.connectToHost("localhost", 1488);
     }
 
@@ -37,9 +37,32 @@ private slots:
 private:
     void sendFile()
     {
-        long data = 1488;
-        char *ptr = reinterpret_cast<char*>(&data);
+        std::ifstream readStream("test.jpg", std::ios::binary);
+        readStream.seekg(0, readStream.end);
+        long size = readStream.tellg();
+        readStream.seekg(0, readStream.beg);
+
+        char *ptr = reinterpret_cast<char*>(&size);
         qDebug() << "File sent" << client.write(ptr, 4);
+        client.waitForBytesWritten(300);
+
+
+
+        std::vector<char> data(size);
+
+        readStream.read(&data[0], size);
+
+        size_t written = 0;
+
+        while( written < size )
+        {
+            size_t temp = client.write(&data[written], std::min(numberOfBytes, data.size() - written));
+
+            qDebug() << temp;
+            written += temp;
+        }
+
+        qDebug() << client.flush();
     }
 
 private:
@@ -57,7 +80,7 @@ public:
 public slots:
     void run()
     {
-        connect(&serverSocket, &QTcpServer::newConnection, this, &ServerTask::recieveFile, Qt::DirectConnection);
+        connect(&serverSocket, &QTcpServer::newConnection, this, &ServerTask::recieveFile);
         serverSocket.listen(QHostAddress::LocalHost, 1488);
     }
 
@@ -77,6 +100,24 @@ public slots:
         if(sizeResult != 4)
             throw std::runtime_error("funcking wrong");
 
+        socket->waitForReadyRead(300);
+
+        std::vector<char> data(size);
+
+        std::ofstream writeStream("output.jpg", std::ios::binary);
+
+        size_t read = 0;
+
+        while(read < size)
+        {
+            if(socket->bytesAvailable())
+            {
+                size_t temp = socket->read(&data[read], numberOfBytes);
+                read += temp;
+            }
+        }
+
+        writeStream.write(&data[0], data.size());
         qDebug() << "File received";
     }
 
