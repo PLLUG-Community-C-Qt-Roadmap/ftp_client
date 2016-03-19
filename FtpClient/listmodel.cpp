@@ -33,14 +33,7 @@ QVariant ListModel::data(const QModelIndex &index, int role) const
         return ModelEntity::getStrType(mData[rowIndex].mType);
     case Size:
     {
-        if(mData[rowIndex].mType == ModelEntity::Type::Folder)
-        {
-            return QString();
-        }
-        else
-        {
-            return mData[rowIndex].mSize;
-        }
+        return (mData[rowIndex].mType == ModelEntity::Type::Folder) ? QString() : QString::number(mData[rowIndex].mSize);
     }
     default:
         break;
@@ -73,7 +66,8 @@ QVariant ListModel::headerData(int section, Qt::Orientation orientation, int rol
 
 void ListModel::refreshData(const std::vector<ModelEntity> &newData)
 {
+    beginResetModel();
     mData = newData;
-    emit dataChanged(this->index(0, 0), this->index(rowCount(QModelIndex())-1, 4));
+    endResetModel();
 }
 

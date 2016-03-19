@@ -22,9 +22,19 @@ public:
 
     void setModel(QAbstractItemModel *model);
 
-    QPushButton* getUploadPushButton();
-    QPushButton* getConnectPushButton();
-    QTreeView* getFilesView();
+    void showConnectButton();
+    void hideConnectButton();
+
+    void showUploadButton();
+    void hideUploadButton();
+
+    void showFilesView();
+    void hideFilesView();
+
+signals:
+    void connectButtonClicked();
+    void uploadButtonClicked();
+    void viewItemClicked(const QModelIndex &index);
 
 private:
     Ui::MainWindow *ui;

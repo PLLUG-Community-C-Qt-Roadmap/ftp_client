@@ -2,12 +2,11 @@
 #include "ui_mainwindow.h"
 
 #include <QTcpSocket>
-
 #include <fstream>
 #include <QFile>
-
 #include <QMessageBox>
 #include <stdexcept>
+
 #include "listviewcontroller.h"
 
 const int portNumber = 1488;
@@ -18,6 +17,13 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    connect(ui->connectButton, &QPushButton::clicked,
+            this, &MainWindow::connectButtonClicked);
+    connect(ui->uploadFileButton, &QPushButton::clicked,
+            this, &MainWindow::uploadButtonClicked);
+    connect(ui->filesView, &QTreeView::doubleClicked,
+            this, &MainWindow::viewItemClicked);
+
     new ListViewController(this, this);
 }
 
@@ -26,19 +32,34 @@ void MainWindow::setModel(QAbstractItemModel *model)
     ui->filesView->setModel(model);
 }
 
-QPushButton *MainWindow::getUploadPushButton()
+void MainWindow::showConnectButton()
 {
-    return ui->uploadFileButton;
+    ui->connectButton->show();
 }
 
-QPushButton *MainWindow::getConnectPushButton()
+void MainWindow::hideConnectButton()
 {
-    return ui->connectButton;
+    ui->connectButton->hide();
 }
 
-QTreeView *MainWindow::getFilesView()
+void MainWindow::showUploadButton()
 {
-    return ui->filesView;
+    ui->uploadFileButton->show();
+}
+
+void MainWindow::hideUploadButton()
+{
+    ui->uploadFileButton->hide();
+}
+
+void MainWindow::showFilesView()
+{
+    ui->filesView->show();
+}
+
+void MainWindow::hideFilesView()
+{
+     ui->filesView->hide();
 }
 
 MainWindow::~MainWindow()

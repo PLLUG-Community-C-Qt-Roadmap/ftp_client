@@ -6,60 +6,77 @@ ListViewController::ListViewController(MainWindow *view, QObject *parent) : QObj
     mClient = new ClientContext(view);
     mCurrDir = initialFolder;
 
-    mView->getFilesView()->hide();  // We cannot display files before the connection is established
-    mView->getUploadPushButton()->hide();   // Also there's no need in upload button yet
+    mView->setWindowTitle("FtpClient");
+    mView->hideFilesView();
+    mView->hideUploadButton();
 
-    connect(mView->getConnectPushButton(), &QPushButton::clicked,
+    connect(mView, &MainWindow::connectButtonClicked,
             this, &ListViewController::doConnect);
-}
 
-ListViewController::~ListViewController()
-{
-    delete mModel;
-    delete mView;
-    delete mClient;
+    connect(mClient, &ClientContext::signalConnected,
+            this, &ListViewController::slotConnected);
+    connect(mClient, &ClientContext::signalDisconnected,
+            this, &ListViewController::slotDisconnected);
 }
 
 void ListViewController::doConnect()
 {
-    mClient->doConnect(mView);
-
-    initializeView();
-
-    makeConnections();
-
-    mView->getConnectPushButton()->hide();
-    mView->getFilesView()->show();
-    mView->getUploadPushButton()->show();
-    mView->setWindowTitle(mCurrDir);
+    mClient->doConnect();
 }
 
 void ListViewController::itemDoubleClicked(const QModelIndex &index)
 {
-    if(index.model()->index(index.row(),2).data().toString() == "Folder")
+    try
     {
-        QString folderName = index.model()->index(index.row(),0).data().toString();
-        mCurrDir += "\\" + folderName;
-        mModel->refreshData(mClient->changeDir(mCurrDir, mView));
-        mView->setWindowTitle(folderName);
+        if(index.model()->index(index.row(),2).data().toString() == "Folder")
+        {
+            QString folderName = index.model()->index(index.row(),0).data().toString();
+            mCurrDir += "\\" + folderName;
+            mModel->refreshData(mClient->changeDir(mCurrDir));
+            mView->setWindowTitle(folderName);
+        }
+        else
+        {
+            mClient->downloadFile();
+        }
     }
-    else
+    catch(const std::exception &e)
     {
-        mClient->downloadFile();
+        QMessageBox::information(mView, "ERROR", e.what());
     }
 }
 
-void ListViewController::makeConnections()
+void ListViewController::slotConnected()
 {
-    connect(mView->getUploadPushButton(), &QPushButton::clicked,
+    QMessageBox::information(mView, "Connected", "Connection is successfull!");
+    initializeView();
+    mView->hideConnectButton();
+    mView->showFilesView();
+    mView->showUploadButton();
+    mView->setWindowTitle(mCurrDir);
+    makeUIConnections();
+}
+
+void ListViewController::slotDisconnected() // In case of reconnection displays last accessed folder
+{
+     QMessageBox::information(mView, "Disconnected", "Connection failed!");
+     mView->hideFilesView();
+     mView->hideUploadButton();
+     mView->showConnectButton();
+     mView->setWindowTitle("FtpClient");
+}
+
+void ListViewController::makeUIConnections()
+{
+    connect(mView, &MainWindow::uploadButtonClicked,
             mClient, &ClientContext::onUploadFile);
 
-    connect(mView->getFilesView(), &QTreeView::doubleClicked,
+    connect(mView, &MainWindow::viewItemClicked,
             this, &ListViewController::itemDoubleClicked);
 }
 
 void ListViewController::initializeView()
 {
-    mModel = new ListModel(mClient->changeDir(mCurrDir, mView), mView);
+    mModel = new ListModel(mClient->changeDir(mCurrDir), mView);
     mView->setModel(dynamic_cast<QAbstractItemModel *>(mModel));
 }

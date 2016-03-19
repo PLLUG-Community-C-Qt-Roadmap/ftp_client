@@ -9,7 +9,6 @@
 #include <QStringList>
 #include "listmodel.h"
 #include "packet.h"
-#include "mainwindow.h"
 
 class ClientContext: public QObject
 {
@@ -19,9 +18,13 @@ public:
     explicit ClientContext(QObject *parent = 0);
     virtual ~ClientContext();
 
-    void doConnect(MainWindow *mainWindow);
-    std::vector<ModelEntity> changeDir(QString path, MainWindow *mainWindow);
+    void doConnect();
+    std::vector<ModelEntity> changeDir(QString path);
     void downloadFile();
+
+signals:
+   void signalConnected();
+   void signalDisconnected();
 
 public slots:
     void slotConnected();
@@ -29,7 +32,7 @@ public slots:
     void onUploadFile();
 
 private:
-    std::vector<ModelEntity> getFilesVector(const QString& files, MainWindow *mainWindow);
+    std::vector<ModelEntity> getFilesVector(const QString& files);
     void sendPath(const QString& path);
 
 private:

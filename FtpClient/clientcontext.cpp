@@ -5,7 +5,6 @@
 #include <QFile>
 #include <QMessageBox>
 #include <stdexcept>
-#include <QMetaEnum>
 
 const int portNumber = 1488;
 
@@ -14,11 +13,11 @@ ClientContext::ClientContext(QObject *parent): QObject(parent)
     mSocket = nullptr;
 }
 
-void ClientContext::doConnect(MainWindow *mainWindow)
+void ClientContext::doConnect()
 {
     if(!mSocket)
     {
-        mSocket = new QTcpSocket(mainWindow);
+        mSocket = new QTcpSocket;
         connect(mSocket, &QAbstractSocket::connected,
                 this, &ClientContext::slotConnected);
         connect(mSocket, static_cast<void(QTcpSocket::*)
@@ -29,32 +28,23 @@ void ClientContext::doConnect(MainWindow *mainWindow)
     qDebug() << "connecting...";
 
     mSocket->connectToHost("localhost", portNumber);
-    mSocket->write("Hello");
 }
 
-std::vector<ModelEntity> ClientContext::changeDir(QString path, MainWindow *mainWindow)
+std::vector<ModelEntity> ClientContext::changeDir(QString path)
 {
-    try
+    sendPath(path);
+
+    mSocket->waitForReadyRead();
+    QByteArray receivedData = mSocket->readAll();
+    Packet pack(receivedData);
+
+    if(pack.getErrorCode())
     {
-        sendPath(path);
-
-        mSocket->waitForReadyRead();
-        QByteArray receivedData = mSocket->readAll();
-        Packet pack(receivedData);
-
-        if(pack.getErrorCode())
-        {
-            throw std::runtime_error(pack.getData().toStdString());
-        }
-        else
-        {
-            return getFilesVector(pack.getData(), mainWindow);
-        }
+        throw std::runtime_error(pack.getData().toStdString());
     }
-    catch(const std::exception &e)
+    else
     {
-        QMessageBox::information(mainWindow, "ERROR", e.what());
-        return std::vector<ModelEntity>();
+        return getFilesVector(pack.getData());
     }
 }
 
@@ -74,6 +64,7 @@ void ClientContext::downloadFile()
 void ClientContext::slotConnected()
 {
     qDebug() << "connected...";
+    emit signalConnected();
 }
 
 void ClientContext::slotError(QAbstractSocket::SocketError err)
@@ -92,6 +83,8 @@ void ClientContext::slotError(QAbstractSocket::SocketError err)
     default:
         qDebug() << "The following error occured: " << mSocket->errorString();
     }
+
+    emit signalDisconnected();
 }
 
 void ClientContext::onUploadFile()
@@ -115,34 +108,26 @@ void ClientContext::onUploadFile()
     mSocket->write( data.data(), data.size() );
 }
 
-std::vector<ModelEntity> ClientContext::getFilesVector(const QString &files, MainWindow* mainWindow)
+std::vector<ModelEntity> ClientContext::getFilesVector(const QString &files)
 {
-    try
-    {
-    // We receive a vector with sets of files. A set contain 4 prorepties : name, date modified, type, sizes
-        std::vector<ModelEntity> filesVector;
-        QStringList list  = files.split('\n');
-        list.pop_back(); // We need to delete last element, besause it's always empty and useless
 
-        if(list.size()%4 == 0) // Check whether the list is valid.
-        {
-            for(auto it = list.begin(); it != list.end(); it += 4)
-            {              
-                ModelEntity item(QStringList{*it, *(it + 1), *(it + 2), *(it + 3)});
-                filesVector.push_back(item);
-            }
-            return filesVector;
-        }
-        else
-        {
-            throw std::runtime_error("Invalid list of files received.");
-            return  std::vector<ModelEntity>();
-        }
-    }
-    catch(const std::exception &e)
+    // We receive a vector with sets of files. A set contains 4 prorepties : name, date modified, type, sizes
+    std::vector<ModelEntity> filesVector;
+    QStringList list  = files.split('\n');
+    list.pop_back(); // We need to delete the last element, besause it's always empty and useless
+
+    if(list.size()%4 == 0) // Check whether the list is valid.
     {
-        QMessageBox::information(mainWindow, "ERROR", e.what());
-        return  std::vector<ModelEntity>();
+        for(auto it = list.begin(); it != list.end(); it += 4)
+        {
+            ModelEntity item(QStringList{*it, *(it + 1), *(it + 2), *(it + 3)});
+            filesVector.push_back(item);
+        }
+        return filesVector;
+    }
+    else
+    {
+        throw std::runtime_error("Invalid list of files received.");
     }
 }
 
