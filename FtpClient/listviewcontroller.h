@@ -17,7 +17,6 @@ public:
     explicit ListViewController(MainWindow *view, QObject *parent = 0);
 
 public slots:
-    void doConnect();
     void itemDoubleClicked(const QModelIndex &index);
     void slotConnected();
     void slotDisconnected();

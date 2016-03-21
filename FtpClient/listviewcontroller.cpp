@@ -10,18 +10,14 @@ ListViewController::ListViewController(MainWindow *view, QObject *parent) : QObj
     mView->hideFilesView();
     mView->hideUploadButton();
 
-    connect(mView, &MainWindow::connectButtonClicked,
-            this, &ListViewController::doConnect);
+    connect(mView, &MainWindow::connectButtonClicked, this, [=](){
+        mClient->doConnect();
+    });
 
     connect(mClient, &ClientContext::signalConnected,
             this, &ListViewController::slotConnected);
     connect(mClient, &ClientContext::signalDisconnected,
             this, &ListViewController::slotDisconnected);
-}
-
-void ListViewController::doConnect()
-{
-    mClient->doConnect();
 }
 
 void ListViewController::itemDoubleClicked(const QModelIndex &index)
