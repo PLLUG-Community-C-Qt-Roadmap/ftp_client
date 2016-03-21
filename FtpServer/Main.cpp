@@ -8,6 +8,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <fstream>
+#include <vector>
 #include "Packet.h"
 
 using boost::asio::ip::tcp;
@@ -70,21 +71,40 @@ struct Executor
 		else
 		{
 			path dirPath(pack.getData());
-
+			
 			if (exists(dirPath) && is_directory(dirPath))
 			{
 				std::cout << "\nIt's a directory that contains:\n";
-
-				std::string dirContent;
+				std::vector<Packet> packets; // A vector of packets.
+				std::string dirContent; // A string that contains no more than 1024 bytes
 				for (directory_entry& file : directory_iterator(dirPath))
 				{
-					dirContent += getFileInfo(file);
-
+					std::string fileInfo = getFileInfo(file);
+					if (dirContent.size() + fileInfo.size() > 1024) // If we exceed the 1024 bytes limit
+					{
+						packets.push_back(Packet(0, 0, 0, dirContent));
+						dirContent.clear();
+					}				
+					// Add info into a string
+					dirContent += fileInfo;
+					
 					path filePath = file.path();
 					std::cout << "    " << filePath.native() << '\n';
 				}
-				Packet toSend(0, 0, 0, dirContent);
+
+				// Check whether dirContent contains data
+				if (dirContent.size() > 0)
+				{
+					packets.push_back(Packet(0, 0, 0, dirContent));
+				}
+
+				Packet toSend(0, 0, packets.size(), "Number of packets"); // We send the number of packets that will be sent.
 				sock.write_some(boost::asio::buffer(toSend.toString()), error);
+				
+				for(const Packet& p: packets) // And actually send the packets.
+				{
+					sock.write_some(boost::asio::buffer(p.toString()), error);
+				}
 			}
 			else
 			{

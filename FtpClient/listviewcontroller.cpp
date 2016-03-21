@@ -73,6 +73,13 @@ void ListViewController::makeUIConnections()
 
 void ListViewController::initializeView()
 {
-    mModel = new ListModel(mClient->changeDir(mCurrDir), mView);
-    mView->setModel(dynamic_cast<QAbstractItemModel *>(mModel));
+    try
+    {
+        mModel = new ListModel(mClient->changeDir(mCurrDir), mView);
+        mView->setModel(dynamic_cast<QAbstractItemModel *>(mModel));
+    }
+    catch(const std::exception &e)
+    {
+        QMessageBox::information(mView, "ERROR", e.what());
+    }
 }

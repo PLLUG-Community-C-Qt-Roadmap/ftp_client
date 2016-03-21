@@ -33,6 +33,7 @@ public slots:
 
 private:
     std::vector<ModelEntity> getFilesVector(const QString& files);
+    std::vector<ModelEntity> getFilesVector(const std::vector<Packet> &packets);
     void sendPath(const QString& path);
 
 private:

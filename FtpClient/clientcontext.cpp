@@ -44,7 +44,15 @@ std::vector<ModelEntity> ClientContext::changeDir(QString path)
     }
     else
     {
-        return getFilesVector(pack.getData());
+        int quantity = pack.getAdditionalOptions(); // Get the number of packets
+        std::vector<Packet> packets;
+        for(int i = 0; i < quantity; ++i)
+        {
+            mSocket->waitForReadyRead();
+            QByteArray packetReceived = mSocket->readAll();
+            packets.push_back(Packet(packetReceived));
+        }
+        return getFilesVector(packets);
     }
 }
 
@@ -129,6 +137,17 @@ std::vector<ModelEntity> ClientContext::getFilesVector(const QString &files)
     {
         throw std::runtime_error("Invalid list of files received.");
     }
+}
+
+std::vector<ModelEntity> ClientContext::getFilesVector(const std::vector<Packet> &packets)
+{
+    std::vector<ModelEntity> filesVector;
+    for(const Packet &p: packets)
+    {
+        std::vector<ModelEntity> vec = getFilesVector(p.getData());
+        filesVector.insert(filesVector.end(), vec.begin(), vec.end());
+    }
+    return filesVector;
 }
 
 void ClientContext::sendPath(const QString &path)
