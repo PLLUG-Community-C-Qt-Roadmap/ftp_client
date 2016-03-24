@@ -6,7 +6,9 @@
 #include <utility>
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 #include <fstream>
+#include <vector>
 #include "Packet.h"
 #include <map>
 #include <memory>
@@ -15,6 +17,37 @@ using boost::asio::ip::tcp;
 using namespace boost::filesystem;
 
 const int max_length = 1030;
+
+std::string getDateModified(const boost::filesystem::directory_entry &p)
+{
+	std::time_t date = last_write_time(p.path());
+
+	return asctime(gmtime(&date));
+}
+
+std::string getFileInfo(const boost::filesystem::directory_entry &p)
+{
+	std::string fileInfo;
+
+	fileInfo += p.path().filename().string(); //name
+	fileInfo += "\n";
+
+	fileInfo += getDateModified(p); // date modified
+
+	if (is_directory(p))
+	{
+		fileInfo += "Folder\n"; //type
+		fileInfo += "\n"; //size should not be stated, so we leave the empty space
+	}
+	else
+	{
+		fileInfo += "File\n"; //type
+		fileInfo += boost::lexical_cast<std::string>(file_size(p.path())); //size
+		fileInfo += '\n';
+	}
+
+	return fileInfo;
+}
 
 struct Executor
 {
@@ -40,23 +73,40 @@ struct Executor
 		else
 		{
 			path dirPath(pack.getData());
-
+			
 			if (exists(dirPath) && is_directory(dirPath))
 			{
 				std::cout << "\nIt's a directory that contains:\n";
-
-				std::string dirContent;
-				dirContent += "It's a directory that contains:\n"; 
+				std::vector<Packet> packets; // A vector of packets.
+				std::string dirContent; // A string that contains no more than 1024 bytes
 				for (directory_entry& file : directory_iterator(dirPath))
 				{
-					dirContent += file.path().string();
-					dirContent += "\n";
-
+					std::string fileInfo = getFileInfo(file);
+					if (dirContent.size() + fileInfo.size() > 1024) // If we exceed the 1024 bytes limit
+					{
+						packets.push_back(Packet(0, 0, 0, dirContent));
+						dirContent.clear();
+					}				
+					// Add info into a string
+					dirContent += fileInfo;
+					
 					path filePath = file.path();
 					std::cout << "    " << filePath.native() << '\n';
 				}
-				Packet toSend(0, 0, 0, dirContent);
+
+				// Check whether dirContent contains data
+				if (dirContent.size() > 0)
+				{
+					packets.push_back(Packet(0, 0, 0, dirContent));
+				}
+
+				Packet toSend(0, 0, packets.size(), "Number of packets"); // We send the number of packets that will be sent.
 				sock.write_some(boost::asio::buffer(toSend.toString()), error);
+				
+				for(const Packet& p: packets) // And actually send the packets.
+				{
+					sock.write_some(boost::asio::buffer(p.toString()), error);
+				}
 			}
 			else
 			{

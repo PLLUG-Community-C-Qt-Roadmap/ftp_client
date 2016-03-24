@@ -1,12 +1,8 @@
 #include "listmodel.h"
 
-ListModel::ListModel(QObject *parent) : QAbstractListModel(parent)
+ListModel::ListModel(const std::vector<ModelEntity> &initialData, QObject *parent) : QAbstractListModel(parent)
 {
-   // Sample data
-   mData.push_back(ModelEntity("My Pictures", QDateTime::currentDateTime(), ModelEntity::Type::Folder, 1037));
-   mData.push_back(ModelEntity("image.jpg", QDateTime::currentDateTime(), ModelEntity::Type::File, 876));
-   mData.push_back(ModelEntity("text.txt", QDateTime::currentDateTime(), ModelEntity::Type::File, 103));
-   mData.push_back(ModelEntity("image2.png", QDateTime::currentDateTime(), ModelEntity::Type::File, 246));
+   refreshData(initialData);
 }
 
 int ListModel::rowCount(const QModelIndex &parent) const
@@ -34,9 +30,11 @@ QVariant ListModel::data(const QModelIndex &index, int role) const
     case DateModified:
         return mData[rowIndex].mDateModified;
     case Type:
-        return mData[rowIndex].mType;
+        return ModelEntity::getStrType(mData[rowIndex].mType);
     case Size:
-        return mData[rowIndex].mSize;
+    {
+        return (mData[rowIndex].mType == ModelEntity::Type::Folder) ? QString() : QString::number(mData[rowIndex].mSize);
+    }
     default:
         break;
     }
@@ -44,9 +42,32 @@ QVariant ListModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
+QVariant ListModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+    if(role != Qt::DisplayRole)
+            return QVariant();
+
+        if (orientation == Qt::Horizontal)
+        {
+            switch (section)
+            {
+            case 0:
+                return tr("Name");
+            case 1:
+                return tr("Date Modified");
+            case 2:
+                return tr("Type");
+            case 3:
+                return tr("Size");
+            }
+        }
+        return QVariant();
+}
+
 void ListModel::refreshData(const std::vector<ModelEntity> &newData)
 {
+    beginResetModel();
     mData = newData;
-    emit dataChanged(this->index(0, 0), this->index(rowCount()-1, 4));
+    endResetModel();
 }
 

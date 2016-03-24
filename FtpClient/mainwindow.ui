@@ -47,31 +47,17 @@ QPushButton:active
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
+    <item row="0" column="0" rowspan="3">
+     <widget class="QTreeView" name="filesView"/>
+    </item>
+    <item row="0" column="1">
      <widget class="QPushButton" name="connectButton">
       <property name="text">
        <string>Connect</string>
       </property>
      </widget>
     </item>
-    <item row="1" column="0">
-     <widget class="QPushButton" name="changeDirButton">
-      <property name="text">
-       <string>ChangeDir</string>
-      </property>
-      <property name="default">
-       <bool>false</bool>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="0">
-     <widget class="QPushButton" name="downloadFileButton">
-      <property name="text">
-       <string>DownloadFile</string>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="0">
+    <item row="1" column="1">
      <widget class="QPushButton" name="uploadFileButton">
       <property name="text">
        <string>UploadFile</string>

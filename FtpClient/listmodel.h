@@ -3,9 +3,9 @@
 
 #include <QObject>
 #include <QAbstractListModel>
-#include <vector>
 #include <QString>
 #include <QDateTime>
+#include <vector>
 
 struct ModelEntity
 {
@@ -22,17 +22,49 @@ struct ModelEntity
         mType(),
         mSize()
     {}
-    ModelEntity (const QString name, const QDateTime dateModified, const Type type, const double size):
+    ModelEntity (const QString &name, const QDateTime &dateModified, Type type, double size):
         mName(name),
         mDateModified(dateModified),
         mType(type),
         mSize(size)
     {}
+    ModelEntity(const QStringList &properties)
+    {
+        auto it = properties.begin();
+
+        mName = *it;
+        mDateModified = QDateTime::fromString(*(++it), "ddd MMM d HH:mm:ss yyyy");
+        mType = getEnumType(*(++it));
+        mSize = (*(++it)).toInt();
+    }
+
+    static ModelEntity::Type getEnumType(const QString &type)
+    {
+        if(type == "File")
+        {
+            return Type::File;
+        }
+        else if(type == "Folder")
+        {
+            return Type::Folder;
+        }
+        else return Type::Undefined;
+    }
+
+    static QString getStrType(Type type)
+    {
+        switch(type)
+        {
+        case 1: return "Folder";
+        case 2: return "File";
+        default: return "Undefined";
+        }
+    }
 
     QString mName;
     QDateTime mDateModified;
     Type mType;
-    double mSize;
+    int mSize;
 };
 
 class IListModel
@@ -45,11 +77,12 @@ class ListModel : public QAbstractListModel, public IListModel
 {
     Q_OBJECT
 public:
-    explicit ListModel(QObject *parent = nullptr);
+    explicit ListModel(const std::vector<ModelEntity> &initialData, QObject *parent = nullptr);
 
     virtual int rowCount(const QModelIndex &parent) const override;
     virtual int columnCount(const QModelIndex &parent) const override;
     virtual QVariant data(const QModelIndex &index, int role) const override;
+    virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
     virtual void refreshData(const std::vector<ModelEntity> &newData) override;
 
