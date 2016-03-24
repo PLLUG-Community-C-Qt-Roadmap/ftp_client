@@ -12,13 +12,17 @@ TARGET = FtpClient
 TEMPLATE = app
 
 SOURCES += main.cpp \
-        packet.cpp \
-        mainwindow.cpp \
-        listmodel.cpp
+    packet.cpp \
+    mainwindow.cpp \
+    listmodel.cpp \
+    clientcontext.cpp \
+    listviewcontroller.cpp
 
 HEADERS  += mainwindow.h \
     packet.h \
-    listmodel.h
+    listmodel.h \
+    clientcontext.h \
+    listviewcontroller.h
 
 FORMS    += mainwindow.ui
 

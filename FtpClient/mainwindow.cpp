@@ -2,12 +2,12 @@
 #include "ui_mainwindow.h"
 
 #include <QTcpSocket>
-
 #include <fstream>
 #include <QFile>
-
 #include <QMessageBox>
 #include <stdexcept>
+
+#include "listviewcontroller.h"
 
 const int portNumber = 1488;
 
@@ -16,6 +16,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+<<<<<<< HEAD
     socket = nullptr;
 
     init();
@@ -37,107 +38,52 @@ void MainWindow::doConnect()
         connect(ui->downloadFileButton, &QPushButton::clicked, this, &MainWindow::onDownloadFile);
         connect(ui->uploadFileButton, &QPushButton::clicked, this, &MainWindow::onUploadFile);
     }
+=======
+>>>>>>> 893b028e9dddd65d3c343974f89d4790d0a95d02
 
-    qDebug() << "connecting...";
-
-    socket->connectToHost("localhost", portNumber);
-    socket->write("Hello");
-}
-
-void MainWindow::slotError(QAbstractSocket::SocketError err)
-{
-    switch(err)
-    {
-    case QAbstractSocket::HostNotFoundError :
-        qDebug() << "Error: The host was not found.";
-        break;
-    case QAbstractSocket::RemoteHostClosedError :
-        qDebug() << "Error: The remote host is closed.";
-        break;
-    case QAbstractSocket::ConnectionRefusedError :
-        qDebug() << "Error: The connection was refused.";
-        break;
-    default:
-        qDebug() << "The following error occured: " << socket->errorString();
-    }
-}
-
-void MainWindow::onChangeDir()
-{
-    try
-    {
-        sendPath("C:\\FTPclient");
-
-        socket->waitForReadyRead();
-        QByteArray receivedData = socket->readAll();
-        Packet pack(receivedData);
-
-        if(pack.getErrorCode())
-        {
-            throw std::runtime_error(pack.getData().toStdString());
-        }
-        else
-        {
-            qDebug () << pack.getData();
-        }
-    }
-    catch(const std::exception &e)
-    {
-        QMessageBox::information(this, "ERROR", e.what());
-    }
-}
-
-void MainWindow::onDownloadFile()
-{
-    std::string buffer;
-
-    buffer.resize(2);
-
-    *reinterpret_cast<short*>(&buffer[0]) = 1;
-
-    buffer += "Download file plz";
-
-    socket->write( buffer.c_str(), buffer.size() );
-}
-
-void MainWindow::onUploadFile()
-{
-
-    QFile readStream("data.png");
-
-    if( !readStream.open( QIODevice::ReadOnly ) )
-    {
-        qDebug() << "Can`t open file";
-        return;
-    }
-
-    qDebug() << readStream.size();
-
-    QByteArray data( 2, '0' );
-
-    *reinterpret_cast<short*>( data.data() ) = 2;
-
-    data.append( readStream.readAll() );
-
-    socket->write( data.data(), data.size() );
-}
-
-void MainWindow::sendPath(const QString &path)
-{
-    Packet pack(0, 0, 0, path);
-    std::string buffer = pack.toStdString();
-    socket->write( buffer.c_str(), buffer.size() );
-}
-
-void MainWindow::slotConnected()
-{
-    qDebug() << "connected...";
-}
-
-void MainWindow::init()
-{
     connect(ui->connectButton, &QPushButton::clicked,
-            this, &MainWindow::doConnect);
+            this, &MainWindow::connectButtonClicked);
+    connect(ui->uploadFileButton, &QPushButton::clicked,
+            this, &MainWindow::uploadButtonClicked);
+    connect(ui->filesView, &QTreeView::doubleClicked,
+            this, &MainWindow::viewItemClicked);
+
+    new ListViewController(this, this);
+}
+
+void MainWindow::setModel(QAbstractItemModel *model)
+{
+    ui->filesView->setModel(model);
+}
+
+void MainWindow::showConnectButton()
+{
+    ui->connectButton->show();
+}
+
+void MainWindow::hideConnectButton()
+{
+    ui->connectButton->hide();
+}
+
+void MainWindow::showUploadButton()
+{
+    ui->uploadFileButton->show();
+}
+
+void MainWindow::hideUploadButton()
+{
+    ui->uploadFileButton->hide();
+}
+
+void MainWindow::showFilesView()
+{
+    ui->filesView->show();
+}
+
+void MainWindow::hideFilesView()
+{
+     ui->filesView->hide();
 }
 
 MainWindow::~MainWindow()

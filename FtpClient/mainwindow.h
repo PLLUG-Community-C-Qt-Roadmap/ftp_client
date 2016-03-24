@@ -3,11 +3,9 @@
 
 #include <QMainWindow>
 #include <QObject>
-#include <QTcpSocket>
 #include <QAbstractSocket>
 #include <QDebug>
-
-#include "packet.h"
+#include <QModelIndex>
 
 namespace Ui {
 class MainWindow;
@@ -16,29 +14,27 @@ class MainWindow;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
-
 public:
     explicit MainWindow(QWidget *parent = 0);
-
-    void doConnect();
-
     ~MainWindow();
 
-public slots:
-    void slotConnected();
-    void slotError(QAbstractSocket::SocketError err);
+    void setModel(QAbstractItemModel *model);
+
+    void showConnectButton();
+    void hideConnectButton();
+
+    void showUploadButton();
+    void hideUploadButton();
+
+    void showFilesView();
+    void hideFilesView();
+
+signals:
+    void connectButtonClicked();
+    void uploadButtonClicked();
+    void viewItemClicked(const QModelIndex &index);
 
 private:
-    void onChangeDir();
-    void onDownloadFile();
-    void onUploadFile();
-    void sendPath(const QString& path);
-
-private:
-     void init();
-
-private:
-    QTcpSocket * socket;
     Ui::MainWindow *ui;
 };
 

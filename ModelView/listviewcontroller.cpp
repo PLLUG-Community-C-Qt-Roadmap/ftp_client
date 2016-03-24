@@ -10,7 +10,7 @@ ListViewController::ListViewController(MainWindow *view, QObject *parent) : QObj
 
 
     connect(_view, &MainWindow::itemDoubleClicked, this, [](const QModelIndex &index) {
-        qDebug() << "Item cliked" << index.row() << index.column();
+        qDebug() << "Item clicked" << index.row() << index.column();
     });
 
 //    connect(_view, &MainWindow::addItemClicked, this, [=](QString name, int age) {
